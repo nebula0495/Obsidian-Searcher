@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-researcher",
+  "name": "obsidian-searcher",
   "version": "1.0.0",
   "description": "右键菜单中添加在网络上搜索选中文字的功能",
   "main": "main.js",
@@ -12,7 +12,7 @@
     "plugin",
     "search"
   ],
-  "author": "obsidian-researcher",
+  "author": "obsidian-searcher",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^16.11.6",

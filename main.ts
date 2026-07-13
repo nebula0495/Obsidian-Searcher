@@ -1,10 +1,10 @@
 import { Plugin, Editor, MarkdownView, Menu, App, PluginSettingTab, Setting, Notice } from 'obsidian';
 
-interface ResearcherSettings {
+interface SearcherSettings {
 	searchEngine: string;
 }
 
-const DEFAULT_SETTINGS: ResearcherSettings = {
+const DEFAULT_SETTINGS: SearcherSettings = {
 	searchEngine: 'https://www.google.com/search?q='
 }
 
@@ -16,8 +16,8 @@ const SEARCH_ENGINES: { [key: string]: string } = {
 	'Yahoo': 'https://search.yahoo.com/search?p='
 }
 
-export default class ResearcherPlugin extends Plugin {
-	settings: ResearcherSettings;
+export default class SearcherPlugin extends Plugin {
+	settings: SearcherSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -55,7 +55,7 @@ export default class ResearcherPlugin extends Plugin {
 		});
 
 		// 添加设置面板
-		this.addSettingTab(new ResearcherSettingTab(this.app, this));
+		this.addSettingTab(new SearcherSettingTab(this.app, this));
 	}
 
 	searchOnWeb(text: string) {
@@ -75,10 +75,10 @@ export default class ResearcherPlugin extends Plugin {
 	}
 }
 
-class ResearcherSettingTab extends PluginSettingTab {
-	plugin: ResearcherPlugin;
+class SearcherSettingTab extends PluginSettingTab {
+	plugin: SearcherPlugin;
 
-	constructor(app: App, plugin: ResearcherPlugin) {
+	constructor(app: App, plugin: SearcherPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -88,7 +88,7 @@ class ResearcherSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Researcher 插件设置' });
+		containerEl.createEl('h2', { text: 'Searcher 插件设置' });
 
 		new Setting(containerEl)
 			.setName('搜索引擎')

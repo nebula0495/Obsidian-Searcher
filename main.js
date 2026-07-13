@@ -24,7 +24,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // main.ts
 var main_exports = {};
 __export(main_exports, {
-  default: () => ResearcherPlugin
+  default: () => SearcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
@@ -38,7 +38,7 @@ var SEARCH_ENGINES = {
   "DuckDuckGo": "https://duckduckgo.com/?q=",
   "Yahoo": "https://search.yahoo.com/search?p="
 };
-var ResearcherPlugin = class extends import_obsidian.Plugin {
+var SearcherPlugin = class extends import_obsidian.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerEvent(
@@ -65,7 +65,7 @@ var ResearcherPlugin = class extends import_obsidian.Plugin {
         }
       }
     });
-    this.addSettingTab(new ResearcherSettingTab(this.app, this));
+    this.addSettingTab(new SearcherSettingTab(this.app, this));
   }
   searchOnWeb(text) {
     const trimmedText = text.trim();
@@ -81,7 +81,7 @@ var ResearcherPlugin = class extends import_obsidian.Plugin {
     await this.saveData(this.settings);
   }
 };
-var ResearcherSettingTab = class extends import_obsidian.PluginSettingTab {
+var SearcherSettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -89,7 +89,7 @@ var ResearcherSettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Researcher \u63D2\u4EF6\u8BBE\u7F6E" });
+    containerEl.createEl("h2", { text: "Searcher \u63D2\u4EF6\u8BBE\u7F6E" });
     new import_obsidian.Setting(containerEl).setName("\u641C\u7D22\u5F15\u64CE").setDesc("\u9009\u62E9\u7528\u4E8E\u641C\u7D22\u7684\u641C\u7D22\u5F15\u64CE").addDropdown((dropdown) => {
       for (const [name, url] of Object.entries(SEARCH_ENGINES)) {
         dropdown.addOption(url, name);
