@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build artifacts (keep main.js for direct installation)
+*.js.map
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Uploads
+.uploads/
+
+# Plugin user data
+data.json

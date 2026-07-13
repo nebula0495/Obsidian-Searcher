@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-researcher",
+  "name": "Researcher",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "右键菜单中添加\"在网络上搜索\"选项，点击后用默认浏览器搜索选中的文字。",
+  "author": "obsidian-researcher",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
