@@ -1,147 +1,168 @@
-import { Plugin, Editor, MarkdownView, Menu, App, PluginSettingTab, Setting, Notice } from 'obsidian';
+import {
+	App,
+	Editor,
+	getLanguage,
+	MarkdownView,
+	Menu,
+	Notice,
+	Plugin,
+	PluginSettingTab,
+	Setting,
+} from 'obsidian';
+import {
+	buildSearchUrl,
+	DEFAULT_SETTINGS,
+	normalizeSettings,
+	SEARCH_ENGINES,
+	SearcherSettings,
+	validateSearchTemplate,
+} from './search';
 
-interface SearcherSettings {
-	searchEngine: string;
-}
+type Messages = typeof ENGLISH_MESSAGES;
 
-const DEFAULT_SETTINGS: SearcherSettings = {
-	searchEngine: 'https://www.google.com/search?q='
-}
+const ENGLISH_MESSAGES = {
+	commandName: 'Search selected text on the web',
+	menuItem: 'Search on the web',
+	emptySelection: 'Select text to search first.',
+	invalidTemplate: 'The custom search URL must be a valid HTTP(S) URL.',
+	couldNotOpen: 'Could not open the search result in your browser.',
+	settingsHeading: 'Searcher settings',
+	searchEngineName: 'Search engine',
+	searchEngineDescription: 'Choose the search engine used for selected text.',
+	customEngine: 'Custom',
+	customUrlName: 'Custom search URL',
+	customUrlDescription: 'Use {query} to place the encoded search text. Without it, the text is appended to the URL.',
+	customUrlPlaceholder: 'https://www.google.com/search?q={query}',
+	invalidCustomUrl: 'Enter a valid HTTP(S) URL.',
+	usageHeading: 'Usage',
+	usageDescription: 'Select text in an editor, then use the context menu or command palette to search the web.',
+};
 
-const SEARCH_ENGINES: { [key: string]: string } = {
-	'Google': 'https://www.google.com/search?q=',
-	'Bing': 'https://www.bing.com/search?q=',
-	'Baidu': 'https://www.baidu.com/s?wd=',
-	'DuckDuckGo': 'https://duckduckgo.com/?q=',
-	'Yahoo': 'https://search.yahoo.com/search?p='
+const CHINESE_MESSAGES: Messages = {
+	commandName: '在网络上搜索选中文字',
+	menuItem: '在网络上搜索',
+	emptySelection: '请先选中要搜索的文字。',
+	invalidTemplate: '自定义搜索 URL 必须是有效的 HTTP(S) 地址。',
+	couldNotOpen: '无法在浏览器中打开搜索结果。',
+	settingsHeading: 'Searcher 插件设置',
+	searchEngineName: '搜索引擎',
+	searchEngineDescription: '选择用于搜索选中文字的搜索引擎。',
+	customEngine: '自定义',
+	customUrlName: '自定义搜索 URL',
+	customUrlDescription: '使用 {query} 插入编码后的搜索文字。未使用时，文字会追加到 URL 末尾。',
+	customUrlPlaceholder: 'https://www.google.com/search?q={query}',
+	invalidCustomUrl: '请输入有效的 HTTP(S) URL。',
+	usageHeading: '使用说明',
+	usageDescription: '在编辑器中选中文字，然后使用右键菜单或命令面板进行网络搜索。',
+};
+
+function getMessages(): Messages {
+	return getLanguage().toLowerCase().startsWith('zh') ? CHINESE_MESSAGES : ENGLISH_MESSAGES;
 }
 
 export default class SearcherPlugin extends Plugin {
-	settings: SearcherSettings;
+	settings: SearcherSettings = { ...DEFAULT_SETTINGS };
 
-	async onload() {
+	async onload(): Promise<void> {
 		await this.loadSettings();
 
-		// 注册右键菜单事件
-		this.registerEvent(
-			this.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
-				const selectedText = editor.getSelection();
+		this.registerEvent(this.app.workspace.on('editor-menu', (menu: Menu, editor: Editor) => {
+			const selectedText = editor.getSelection();
+			if (!selectedText.trim()) return;
 
-				if (selectedText && selectedText.trim().length > 0) {
-					menu.addItem((item) => {
-						item
-							.setTitle('在网络上搜索')
-							.setIcon('search')
-							.onClick(() => {
-								this.searchOnWeb(selectedText);
-							});
-					});
-				}
-			})
-		);
+			menu.addItem((item) => item
+				.setTitle(getMessages().menuItem)
+				.setIcon('search')
+				.onClick(() => this.searchOnWeb(selectedText)));
+		}));
 
-		// 添加命令面板命令
 		this.addCommand({
 			id: 'search-selected-text',
-			name: '在网络上搜索选中文字',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				const selectedText = editor.getSelection();
-				if (selectedText && selectedText.trim().length > 0) {
-					this.searchOnWeb(selectedText);
-				} else {
-					new Notice('请先选中要搜索的文字');
-				}
-			}
+			name: getMessages().commandName,
+			editorCallback: (editor: Editor) => this.searchOnWeb(editor.getSelection()),
 		});
 
-		// 添加设置面板
 		this.addSettingTab(new SearcherSettingTab(this.app, this));
 	}
 
-	searchOnWeb(text: string) {
-		const trimmedText = text.trim();
-		if (!trimmedText) return;
+	searchOnWeb(text: string): void {
+		const query = text.trim();
+		if (!query) {
+			new Notice(getMessages().emptySelection);
+			return;
+		}
 
-		const searchUrl = this.settings.searchEngine + encodeURIComponent(trimmedText);
-		window.open(searchUrl, '_blank');
+		const searchUrl = buildSearchUrl(this.settings, query);
+		if (!searchUrl) {
+			new Notice(getMessages().invalidTemplate);
+			return;
+		}
+
+		try {
+			window.open(searchUrl, '_blank', 'noopener');
+		} catch {
+			new Notice(getMessages().couldNotOpen);
+		}
 	}
 
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	async loadSettings(): Promise<void> {
+		this.settings = normalizeSettings(await this.loadData());
 	}
 
-	async saveSettings() {
+	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
 }
 
 class SearcherSettingTab extends PluginSettingTab {
-	plugin: SearcherPlugin;
-
-	constructor(app: App, plugin: SearcherPlugin) {
+	constructor(app: App, private readonly plugin: SearcherPlugin) {
 		super(app, plugin);
-		this.plugin = plugin;
 	}
 
 	display(): void {
 		const { containerEl } = this;
-
+		const messages = getMessages();
 		containerEl.empty();
-
-		containerEl.createEl('h2', { text: 'Searcher 插件设置' });
+		containerEl.createEl('h2', { text: messages.settingsHeading });
 
 		new Setting(containerEl)
-			.setName('搜索引擎')
-			.setDesc('选择用于搜索的搜索引擎')
+			.setName(messages.searchEngineName)
+			.setDesc(messages.searchEngineDescription)
 			.addDropdown((dropdown) => {
-				// 添加预设搜索引擎
-				for (const [name, url] of Object.entries(SEARCH_ENGINES)) {
-					dropdown.addOption(url, name);
+				for (const engineId of Object.keys(SEARCH_ENGINES)) {
+					dropdown.addOption(engineId, engineId[0].toUpperCase() + engineId.slice(1));
 				}
-				// 添加自定义选项
-				dropdown.addOption('custom', '自定义');
-
-				// 设置当前值
-				const currentValue = this.plugin.settings.searchEngine;
-				const isPreset = Object.values(SEARCH_ENGINES).includes(currentValue);
-				dropdown.setValue(isPreset ? currentValue : 'custom');
-
-				dropdown.onChange(async (value) => {
-					if (value !== 'custom') {
-						this.plugin.settings.searchEngine = value;
-						await this.plugin.saveSettings();
-						// 刷新设置面板
-						this.display();
-					} else {
-						this.plugin.settings.searchEngine = 'https://www.google.com/search?q=';
-						await this.plugin.saveSettings();
-						this.display();
-					}
+				dropdown.addOption('custom', messages.customEngine);
+				dropdown.setValue(this.plugin.settings.engineId);
+				dropdown.onChange(async (engineId) => {
+					this.plugin.settings.engineId = engineId as SearcherSettings['engineId'];
+					await this.plugin.saveSettings();
+					this.display();
 				});
 			});
 
-		// 显示自定义URL输入框（当选择自定义或当前不是预设时）
-		const currentValue = this.plugin.settings.searchEngine;
-		const isPreset = Object.values(SEARCH_ENGINES).includes(currentValue);
-
-		if (!isPreset) {
-			new Setting(containerEl)
-				.setName('自定义搜索引擎 URL')
-				.setDesc('输入搜索引擎的URL（搜索关键词会附加在URL后面，例如：https://www.google.com/search?q=）')
+		if (this.plugin.settings.engineId === 'custom') {
+			const customUrlSetting = new Setting(containerEl)
+				.setName(messages.customUrlName)
+				.setDesc(messages.customUrlDescription)
 				.addText((text) => {
 					text
-						.setPlaceholder('https://www.google.com/search?q=')
-						.setValue(currentValue)
+						.setPlaceholder(messages.customUrlPlaceholder)
+						.setValue(this.plugin.settings.customUrl)
 						.onChange(async (value) => {
-							this.plugin.settings.searchEngine = value;
+							const customUrl = value.trim();
+							const isValid = validateSearchTemplate(customUrl);
+							text.inputEl.setCustomValidity(isValid ? '' : messages.invalidCustomUrl);
+							customUrlSetting.setDesc(isValid ? messages.customUrlDescription : messages.invalidCustomUrl);
+							if (!isValid) return;
+
+							this.plugin.settings.customUrl = customUrl;
 							await this.plugin.saveSettings();
 						});
 				});
 		}
 
-		// 说明信息
-		containerEl.createEl('h3', { text: '使用说明' });
-		const desc = containerEl.createEl('p');
-		desc.innerHTML = '在编辑器中选中文字，然后右键点击，在弹出的菜单中选择"在网络上搜索"，即可用默认浏览器打开搜索结果页面。';
+		containerEl.createEl('h3', { text: messages.usageHeading });
+		containerEl.createEl('p', { text: messages.usageDescription });
 	}
 }
