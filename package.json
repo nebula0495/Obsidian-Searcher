@@ -1,6 +1,6 @@
 {
-  "name": "obsidian-searcher",
-  "version": "1.1.0",
+  "name": "web-searcher",
+  "version": "1.1.1",
   "description": "Search selected Obsidian text on the web.",
   "main": "main.js",
   "scripts": {

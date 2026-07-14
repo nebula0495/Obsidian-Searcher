@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.1.1
+
+- Renamed the plugin to `web-searcher` to comply with the community plugin naming policy.
+- Updated the display name to Web Searcher.
+
 ## 1.1.0
 
 - Added Chinese and English plugin UI text based on the Obsidian language.

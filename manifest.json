@@ -1,7 +1,7 @@
 {
-  "id": "obsidian-searcher",
-  "name": "Searcher",
-  "version": "1.1.0",
+  "id": "web-searcher",
+  "name": "Web Searcher",
+  "version": "1.1.1",
   "minAppVersion": "1.4.0",
   "description": "Search selected text on the web with configurable search engines.",
   "author": "YoAya",
